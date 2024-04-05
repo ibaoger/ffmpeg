@@ -2088,13 +2088,21 @@ static const enum AVPixelFormat vp9_pix_fmts_highbd[] = {
     AV_PIX_FMT_NONE
 };
 
-static av_cold void vp9_init_static(FFCodec *codec)
+static int vp9_get_supported_config(const AVCodecContext *avctx,
+                                    const AVCodec *codec,
+                                    enum AVCodecConfig config,
+                                    unsigned flags, const void **out)
 {
-    vpx_codec_caps_t codec_caps = vpx_codec_get_caps(vpx_codec_vp9_cx());
-    if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH)
-        codec->p.pix_fmts = vp9_pix_fmts_highbd;
-    else
-        codec->p.pix_fmts = vp9_pix_fmts_highcol;
+    if (config == AV_CODEC_CONFIG_PIX_FORMAT) {
+        vpx_codec_caps_t codec_caps = vpx_codec_get_caps(vpx_codec_vp9_cx());
+        if (codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH)
+            *out = vp9_pix_fmts_highbd;
+        else
+            *out = vp9_pix_fmts_highcol;
+        return 0;
+    }
+
+    return ff_default_get_supported_config(avctx, codec, config, flags, out);
 }
 
 static const AVClass class_vp9 = {
@@ -2124,6 +2132,6 @@ FFCodec ff_libvpx_vp9_encoder = {
                       FF_CODEC_CAP_INIT_CLEANUP |
                       FF_CODEC_CAP_AUTO_THREADS,
     .defaults       = defaults,
-    .init_static_data = vp9_init_static,
+    .get_supported_config = vp9_get_supported_config,
 };
 #endif /* CONFIG_LIBVPX_VP9_ENCODER */
